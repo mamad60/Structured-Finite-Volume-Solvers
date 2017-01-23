@@ -13,21 +13,20 @@ L=1;  % Lenght of Domain
 m=100; % Number of Control Volumes
 kStat=0;  % Themal Conductivity Calculation Method
 % KStat=0:Constant 1:Function of X 2:Function of Temperature 3: Function of Both
-sStat=1;  %Source Term Calculation Method
-%sStat=0:Constant 1:Function of X 2:Function of Temperature 3: Function of Both
+sStat=2;  %Source Term Calculation Method
+%0: No Source Term 1:Constant 2:Function of X 3:Function of Temperature 4: Function of Both
 sMethod=1; % Solution Method: 0 MATLAB Direct Solver 1: TDMA(Thomas)
-
 %-----Boundary Conditions
 NL=0; % 0:Fixed Temp. 1:Flux Bc 2:Convection on the Left Boundary
 NR=0; % 0:Fixed Temp. 1:Flux Bc 2:Convection on the Right Boundary
-Tl=273; % Temperature at The Left Boundary, Applies only if NL=0
-Tr=273; % Temperature at The Right Boundary, Applies only if NR=0
+Tl=0; % Temperature at The Left Boundary, Applies only if NL=0
+Tr=0; % Temperature at The Right Boundary, Applies only if NR=0
 Ql=0.1; % Flux at The Left Boundary, Applies only if NL=1
-Qr=0.1; % Flux at The Right Boundary, Applies only if NR=1
+Qr=1; % Flux at The Right Boundary, Applies only if NR=1
 %Flux Normal to boundary & Towards it Assumed Positive sign
-hl=0; % Convection Coefficient at The Left Boundary, Applies only if NL=2
+hl=1; % Convection Coefficient at The Left Boundary, Applies only if NL=2
 hr=0.1; % Flux at The Left Boundary, Applies only if NL=2
-Tf=273.0; %Temperature @ infinity used if NL=2 Or NR=2 q=h(Tf-TB)
+Tf=293.0; %Temperature @ infinity used if NL=2 Or NR=2 q=h(Tf-TB)
 
 %------------Only if Thermal Conductivity Or Source Term are function of
 %Temperature ,variables Defined in this Section are used
@@ -40,7 +39,7 @@ X=zeros(m,1); %Location of Verices
 Xvol=zeros(m-1,1); % Location of Control Volume Faces
 T=zeros(m,1); %Variable for Storing Solution
 Told=zeros(m,1); %Variable for Storing Old Iteration Solution
-A=zeros(m,1); % Coefficient Matrix
+A=zeros(m); % Coefficient Matrix
 b=ones(m,1); % Right hand side Matrix
 Dx=zeros(m,1); % Control Volume lenght for Source Terms Evaluation
 ke=zeros(size(Xvol)); % Used For Flux Calculation
@@ -61,13 +60,13 @@ Dx(m)=X(m)-Xvol(m-1);
 tIT=MaxIT;
 MaxIT=1;
 iflag=0;
-if kStat==2 || kStat==3 || sStat==2 || sStat==3
+if kStat==2 || kStat==3 || sStat==3 || sStat==4
     MaxIT=tIT;
     iflag=1;
 end
 %Allocate Matrix for storing Errors for Post-Processing and Initiale T
+T(:)=min(Tl,Tr);
 if iflag
-    T(:)=min(Tl,Tr);
     error=zeros(1,MaxIT);
 end
 
@@ -120,6 +119,7 @@ while (IT<=MaxIT) && (err>epsT)
             %Calcalate k Source Terms Boundies
             [Sc,Sp] = SourceTerm(sStat,X(1),Told(1));
             %----------Set Coefficients
+            Dxl=abs(X(2)-X(1));   %Distance First Two Points Adjacent to Left Boundary
             aI=ke(1)/Dxl; % Point next to Boundary
             aB=aI-Sp*Dx(1)+hl;  % Boundary Point
             b(1)=Sc*Dx(1)+hl*Tf;
@@ -148,6 +148,7 @@ while (IT<=MaxIT) && (err>epsT)
             ae=0;  %only for clarification
             [Sc,Sp] = SourceTerm(sStat,X(m),Told(m));
             %----------Set Coefficients
+            Dxr=abs(X(m)-X(m-1)); %Distance First Two Points Adjacent to Right Boundary
             aI=kw/Dxr; % Point next to Boundary
             aB=aI-Sp*Dx(m)+hr;  % Boundary Point
             b(m)=Sc*Dx(m)+hr*Tf;
@@ -216,7 +217,7 @@ toc;
 if iflag
     if(error(IT-1)>1000)
         fprintf(1,'Iterations Diverged\n');
-        fprintf(1,'Please Consider Change in Time Step, Beta Or other Parmeters and Run the Code Again\n');
+        fprintf(1,'Please Consider Change in Solution Parmeters and Run the Code Again\n');
         disp('Press any key')
         pause
         return;

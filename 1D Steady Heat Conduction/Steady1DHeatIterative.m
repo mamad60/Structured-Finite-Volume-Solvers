@@ -26,8 +26,8 @@ L=1;  % Lenght of Domain
 m=400; % Number of Control Volumes
 kStat=0;  % Themal Conductivity Calculation Method
 % KStat=0:Constant 1:Function of X 2:Function of Temperature 3: Function of Both
-sStat=1;  %Source Term Calculation Method
-%sStat=0:Constant 1:Function of X 2:Function of Temperature 3: Function of Both
+sStat=2;  %Source Term Calculation Method
+%0: No Source Term 1:Constant 2:Function of X 3:Function of Temperature 4: Function of Both 
 iMethod=13; % Solution Method:
 %0 MATLAB Direct Solver 1: TDMA(Direct)
 %2:Jacobi(Matrix) 3:Jacobi 4:Gauss-Seidel(Matrix) 5:Gauss-Seidel
@@ -62,7 +62,7 @@ X=zeros(m,1); %Location of Verices
 Xvol=zeros(m-1,1); % Location of Control Volume Faces
 T=zeros(m,1); %Variable for Storing Solution
 Told=zeros(m,1); %Variable for Storing Old Iteration Solution
-A=zeros(m,1); % Coefficient Matrix
+A=zeros(m); % Coefficient Matrix
 b=ones(m,1); % Right hand side Matrix
 Dx=zeros(m,1); % Control Volume lenght for Source Terms Evaluation
 ke=zeros(size(Xvol)); % Used For Flux Calculation
@@ -84,7 +84,7 @@ Dx(m)=X(m)-Xvol(m-1);
 tIT=MaxIT;
 MaxIT=1;
 iflag=0;
-if kStat==2 || kStat==3 || sStat==2 || sStat==3
+if kStat==2 || kStat==3 || sStat==3 || sStat==4
     MaxIT=tIT;
     iflag=1;
 end
@@ -143,6 +143,7 @@ while (IT<=MaxIT) && (err>epsT)
             %Calcalate k Source Terms Boundies
             [Sc,Sp] = SourceTerm(sStat,X(1),Told(1));
             %----------Set Coefficients
+            Dxl=abs(X(2)-X(1));   %Distance First Two Points Adjacent to Left Boundary
             aI=ke(1)/Dxl; % Point next to Boundary
             aB=aI-Sp*Dx(1)+hl;  % Boundary Point
             b(1)=Sc*Dx(1)+hl*Tf;
@@ -168,6 +169,7 @@ while (IT<=MaxIT) && (err>epsT)
             A(m,m)=aB;
             A(m,m-1)=-aI;
         case 2  %Convection Coeffient is Given
+            Dxr=abs(X(m)-X(m-1)); %Distance First Two Points Adjacent to Right Boundary
             ae=0;  %only for clarification
             [Sc,Sp] = SourceTerm(sStat,X(m),Told(m));
             %----------Set Coefficients
@@ -286,7 +288,7 @@ toc
 if iflag
     if(error(IT-1)>1000)
         fprintf(1,'Iterations Diverged\n');
-        fprintf(1,'Please Consider Change in Time Step, Beta Or other Parmeters and Run the Code Again\n');
+        fprintf(1,'Please Consider Change in Solution Parmeters and Run the Code Again\n');
         disp('Press any key')
         pause
         return;
