@@ -11,16 +11,16 @@ close all
 %Inputs
 L=1;  % Lenght of Domain
 m=100; % Number of Control Volumes
-kStat=0;  % Themal Conductivity Calculation Method
+kStat=3;  % Themal Conductivity Calculation Method
 % KStat=0:Constant 1:Function of X 2:Function of Temperature 3: Function of Both
-sStat=2;  %Source Term Calculation Method
+sStat=4;  %Source Term Calculation Method
 %0: No Source Term 1:Constant 2:Function of X 3:Function of Temperature 4: Function of Both
 sMethod=1; % Solution Method: 0 MATLAB Direct Solver 1: TDMA(Thomas)
 %-----Boundary Conditions
 NL=0; % 0:Fixed Temp. 1:Flux Bc 2:Convection on the Left Boundary
 NR=0; % 0:Fixed Temp. 1:Flux Bc 2:Convection on the Right Boundary
-Tl=0; % Temperature at The Left Boundary, Applies only if NL=0
-Tr=0; % Temperature at The Right Boundary, Applies only if NR=0
+Tl=273; % Temperature at The Left Boundary, Applies only if NL=0
+Tr=283; % Temperature at The Right Boundary, Applies only if NR=0
 Ql=0.1; % Flux at The Left Boundary, Applies only if NL=1
 Qr=1; % Flux at The Right Boundary, Applies only if NR=1
 %Flux Normal to boundary & Towards it Assumed Positive sign
@@ -204,35 +204,36 @@ while (IT<=MaxIT) && (err>epsT)
 %     T=uRelax*T-(1-uRelax)*Told;
     if iflag
         err=abs(norm((T-Told)));
-        fprintf('IT=%i\t Error=%2.6e\n',IT,err);
+        fprintf('Outer Iteration Completed=%i\t Error=%2.6e\n',IT,err);
         if err>=great
             break;
         end
         error(IT)=err;
+        if IT==1,err=1000;end
     end
     IT=IT+1;
 end
 toc;
 % Check Convergence & Plot Convergence History
+IT=IT-1;
 if iflag
-    if(error(IT-1)>1000)
+    if(error(IT)>1000)
         fprintf(1,'Iterations Diverged\n');
         fprintf(1,'Please Consider Change in Solution Parmeters and Run the Code Again\n');
         disp('Press any key')
-        pause
         return;
     end
-    if(error(IT)<eps)
+    if(error(IT)<epsT)
         fprintf(1,'Converged in %i Iterations\n',IT);
-        plot(1:IT,log(error(1:IT)),'- r');
+        semilogy(1:IT,error(1:IT),'- r');
         xlabel('Iteration');
-        ylabel('Log(Error)');
+        ylabel('Error');
         title('Convergence History');
     else
         disp('Maximum Iteration Number Reached');
-        plot(1:IT,lg(error(1:IT)),'- r');
+        semilogy(1:IT,error(1:IT),'- r');
         xlabel('Iteration');
-        ylabel('Log(Error)');
+        ylabel('Error');
         title('Convergence History');
         pause;
         return;
@@ -280,7 +281,7 @@ end
 title('Profile of Heat Flux');
 
 %---if k is a function of x Plot its Variation @ CV Faces
-if kStat==1 || kStat==3
+if  kStat==1 || kStat==2 || kStat==3
     figure
     plot(Xvol,ke,'m','LineWidth',2);
     h1=xlabel('X Coordinate of CV Faces');

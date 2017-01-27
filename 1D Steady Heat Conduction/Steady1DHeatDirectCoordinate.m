@@ -1,42 +1,29 @@
 % This Scripts Solves 1D Steady Heat Transfer Equation
-% d/dx(kdT/dx)+S=0, From Patankar Book, Section 4-2
+% d/dx(r^n*kdT/dx)+S=0, From Patankar Book, Section 4-2
 % Both Thermal Conductivity and Source therms can be varied with time & x
-%Application of the iterative Matrix Solvers---Multi-Grid Version
-%V-Cycle Multi-Grid & Coarse-Fine Grid Methods
 %Discritization Stencil   |--->  W---P---E
+%Discritisation is done in Cartesian, Cylinderical & Spherical coordinates
 %By Mohammad Aghakhani, 2010,for Teaching purposes on the CFD Class
-%Feel Free using for Educaitonal & Research Purposes
+% To be Coorectes!!!!!!!!!!!!!!
 clc
 clear
-close all
-
-%Please set the Path for Iterative Solvers below or Copy files to the Current directry
-iFolder='../../Iterative Solvers';
-%Check & Set Path for Solver Directery
-pathCell = regexp(path, pathsep, 'split');
-if ispc  % Windows is not case-sensitive
-  onPath = any(strcmpi(iFolder, pathCell));
-else
-  onPath = any(strcmp(iFolder, pathCell));
-end
-if ~onPath,addpath(genpath(iFolder)); end
 
 %Inputs
 L=1;  % Lenght of Domain
 m=100; % Number of Control Volumes
+r=2 ; % Select coordinate system r=0: Cartesian r=1: Cylindirical r=2: Spherical
 kStat=0;  % Themal Conductivity Calculation Method
 % KStat=0:Constant 1:Function of X 2:Function of Temperature 3: Function of Both
-sStat=1;  %Source Term Calculation Method
-%0: No Source Term 1:Constant 2:Function of X 3:Function of Temperature 4: Function of Both
-espSolver=1e-6; % Maximum Residual of Matrix Iterative Solver
-MaxITSolver=10000; % Maximum Iteraton of Matrix Iterative Solver
+sStat=0;  %Source Term Calculation Method
+%sStat=0:Constant 1:Function of X 2:Function of Temperature 3: Function of Both
+sMethod=0; % Solution Method: 0 MATLAB Direct Solver 1: TDMA(Thomas)
 
 %-----Boundary Conditions
 NL=0; % 0:Fixed Temp. 1:Flux Bc 2:Convection on the Left Boundary
 NR=0; % 0:Fixed Temp. 1:Flux Bc 2:Convection on the Right Boundary
 Tl=273; % Temperature at The Left Boundary, Applies only if NL=0
 Tr=283; % Temperature at The Right Boundary, Applies only if NR=0
-Ql=0.1; % Flux at The Left Boundary, Applies only if NL=1
+Ql=-0.1; % Flux at The Left Boundary, Applies only if NL=1
 Qr=0.1; % Flux at The Right Boundary, Applies only if NR=1
 %Flux Normal to boundary & Towards it Assumed Positive sign
 hl=0; % Convection Coefficient at The Left Boundary, Applies only if NL=2
@@ -46,19 +33,20 @@ Tf=273.0; %Temperature @ infinity used if NL=2 Or NR=2 q=h(Tf-TB)
 %------------Only if Thermal Conductivity Or Source Term are function of
 %Temperature ,variables Defined in this Section are used
 IT=1;   %Current Iteration Counter
-MaxIT=100;  %Maximum Allowed Iteration
+MaxIT=10000;  %Maximum Allowed Iteration
 epsT=1e-6;   %Convergence Criteria in Two Concecutive Iterations
+% uRelax=1; % Under Relaxation factor for 
+
 %-----------------------------------------------------------
 %Variable Allocation
 X=zeros(m,1); %Location of Verices
 Xvol=zeros(m-1,1); % Location of Control Volume Faces
 T=zeros(m,1); %Variable for Storing Solution
 Told=zeros(m,1); %Variable for Storing Old Iteration Solution
-A=zeros(m); % Coefficient Matrix
+A=zeros(m,1); % Coefficient Matrix
 b=ones(m,1); % Right hand side Matrix
 Dx=zeros(m,1); % Control Volume lenght for Source Terms Evaluation
 ke=zeros(size(Xvol)); % Used For Flux Calculation
-q=zeros(size(ke));
 err=1000; % Varible for Storing Error for Outer loop
 great=1e10; % Assumsion for infinity
 %------------------------------------------------------------
@@ -71,25 +59,50 @@ for i=2:m-1;
     Dx(i)=abs(Xvol(i)-Xvol(i-1));
 end
 Dx(m)=X(m)-Xvol(m-1);
+Dxl=abs(X(2)-X(1)); %Distance First Two Points Adjacent to Left Boundary
+Dxr=abs(X(m)-X(m-1)); %Distance First Two Points Adjacent to Right Boundary
+%Correct Boundary Values of xe & xw for coordinate system 
+%---------@Boundeies
+switch r
+    case 0
+        %No Correction is Needed
+    case 1
+        Dxl=Dxl/Xvol(1); % /re
+        Dxr=Dxr/Xvol(1); % /rw
+    case 2
+        Dxl=Dxl/Xvol(1)^2; % /re^2
+        Dxr=Dxr/Xvol(1)^2; % /rw^2
+end
+%---------@ Interiror Cells
+for i=2:m-1
+    switch r
+        case 0
+            %No Correction is Needed
+        case 1
+            Xe(i)=Xe(i)/Xvol(i); % /re^2
+            Xw(i)=Xe(i)/Xvol(i-1); % /rw^2
+        case 2
+            Xe(i)=Xe(i)/Xvol(i)^2; % /re^2
+            Xw(i)=Xe(i)/Xvol(i-1)^2; % /rw^2
+    end
+end
+
 %First check if an iterative solution must be applied
 %for Temperature Depencency of Thermal Conductinvity or Source Term
 tIT=MaxIT;
 MaxIT=1;
 iflag=0;
-if kStat==2 || kStat==3 || sStat==3 || sStat==4
+if kStat==2 || kStat==3 || sStat==2 || sStat==3
     MaxIT=tIT;
     iflag=1;
 end
 %Allocate Matrix for storing Errors for Post-Processing and Initiale T
-% i=0:m-1;
-% k=8;
-% T(:)=sin(i*k*pi/m);
 if iflag
+    T(:)=min(Tl,Tr);
     error=zeros(1,MaxIT);
 end
 
 %% Outer Loop : Perfomed more than one if k(t) or s(x)
-tic;
 while (IT<=MaxIT) && (err>epsT)
     Told=T;
     %--------------------------------------------------------------
@@ -123,9 +136,8 @@ while (IT<=MaxIT) && (err>epsT)
         case 1  %Fixed Flux
             aw=0;  %only for clarification
             %Calcalate k Source Terms Boundies
-            [Sc,Sp] = SourceTerm(sStat,X(1),Told(1));
+            [Sc,Sp] = SourceTerm(sStat,X(1),Told(1));         
             %----------Set Coefficients
-            Dxl=abs(X(2)-X(1));   %Distance First Two Points Adjacent to Left Boundary
             aI=ke(1)/Dxl; % Point next to Boundary
             aB=aI-Sp*Dx(1);  % Boundary Point
             b(1)=Sc*Dx(1)+Ql;
@@ -137,7 +149,6 @@ while (IT<=MaxIT) && (err>epsT)
             %Calcalate k Source Terms Boundies
             [Sc,Sp] = SourceTerm(sStat,X(1),Told(1));
             %----------Set Coefficients
-            Dxl=abs(X(2)-X(1));   %Distance First Two Points Adjacent to Left Boundary
             aI=ke(1)/Dxl; % Point next to Boundary
             aB=aI-Sp*Dx(1)+hl;  % Boundary Point
             b(1)=Sc*Dx(1)+hl*Tf;
@@ -155,7 +166,6 @@ while (IT<=MaxIT) && (err>epsT)
             %Calcalate k Source Terms Boundies
             [Sc,Sp] = SourceTerm(sStat,X(m),Told(m));
             %----------Set Coefficients
-            Dxr=abs(X(m)-X(m-1)); %Distance First Two Points Adjacent to Right Boundary
             aI=kw/Dxr; % Point next to Boundary
             aB=aI-Sp*Dx(m);  % Boundary Point
             b(m)=Sc*Dx(m)+Qr;
@@ -166,7 +176,6 @@ while (IT<=MaxIT) && (err>epsT)
             ae=0;  %only for clarification
             [Sc,Sp] = SourceTerm(sStat,X(m),Told(m));
             %----------Set Coefficients
-            Dxr=abs(X(m)-X(m-1)); %Distance First Two Points Adjacent to Right Boundary
             aI=kw/Dxr; % Point next to Boundary
             aB=aI-Sp*Dx(m)+hr;  % Boundary Point
             b(m)=Sc*Dx(m)+hr*Tf;
@@ -206,45 +215,50 @@ while (IT<=MaxIT) && (err>epsT)
         A(i,i-1)=-aw;
         A(i,i+1)=-ae;
     end
-    %Solve Equations by MG
-    %--------Coarse-Fine Grid Method
-    %T = CoarseGridCorrection(A,T,b,MaxITSolver,espSolver);
-    %Performe V-Cycle Multi-GRrid
-    nmax=floor(log2(m));  %Maximum Number of Grid Levels until 2 nodes
-    T = MVIter(A,T,b,MaxITSolver,espSolver,nmax);
+    %Solve Equations
+    switch sMethod
+        case 0
+            %         t1=tic;
+            T=A\b;
+            %             display('Direct Matlab Solver')
+            %         toc(t1)
+        case 1
+            %         t2=tic;
+            T=TDMA(A,b);
+            %             display('TDMA Method')
+            %         toc(t2)
+    end
+%     T=uRelax*T-(1-uRelax)*Told;
     if iflag
         err=abs(norm((T-Told)));
-        fprintf('Outer Iteration=%i\t Error=%2.6e\n',IT,err);
+        fprintf('IT=%i\t Error=%2.6e\n',IT,err);
         if err>=great
             break;
         end
         error(IT)=err;
-        if IT==1,err=1000;end
     end
     IT=IT+1;
 end
-toc
 % Check Convergence & Plot Convergence History
-It=IT-1;
 if iflag
-    if(error(IT)>1000)
+    if(error(IT-1)>1000)
         fprintf(1,'Iterations Diverged\n');
-        fprintf(1,'Please Consider Change in Solution Parmeters and Run the Code Again\n');
+        fprintf(1,'Please Consider Change in Time Step, Beta Or other Parmeters and Run the Code Again\n');
         disp('Press any key')
         pause
         return;
     end
     if(error(IT)<eps)
         fprintf(1,'Converged in %i Iterations\n',IT);
-        semilogy(1:IT,(error(1:IT)),'- r');
+        plot(1:IT,log(error(1:IT)),'- r');
         xlabel('Iteration');
-        ylabel('Error');
+        ylabel('Log(Error)');
         title('Convergence History');
     else
         disp('Maximum Iteration Number Reached');
-        semilogy(1:IT,error(1:IT),'- r');
+        plot(1:IT,lg(error(1:IT)),'- r');
         xlabel('Iteration');
-        ylabel('Error');
+        ylabel('Log(Error)');
         title('Convergence History');
         pause;
         return;
@@ -255,9 +269,9 @@ end
 %% Post-Processing-----------------------------------------------------------
 
 %---Report Fluxes @ Right & Left Boundries
-ql=kl*(T(1)-T(2))/(X(2)-X(1));   %Flux @ the Left Boundary
-qr=kr*(T(m)-T(m-1))/(X(m)-X(m-1));   %Flux @ the Left Boundary
-fprintf('\nThe Flux @ the Left Boundary is: %2.4e\n',ql);
+ql=kl*(T(1)-T(2))/Dxl;   %Flux @ the Left Boundary
+qr=kr*(T(m)-T(m-1))/Dxr;   %Flux @ the Left Boundary
+fprintf('The Flux @ the Left Boundary is: %2.4e\n',ql);
 fprintf('The Flux @ the Right Boundary is: %2.4e\n',qr);
 %---Report Temeratures @ Right & Left Boundries
 fprintf('The Temperature @ the Left Boundary is: %2.4e\n',T(1));
@@ -270,15 +284,15 @@ figure
 plot(X,T,'LineWidth',2);
 xlabel('X Coordinate');
 ylabel('T');
-if T(m)>T(1)
-    xlim([0 L]);
+xlim([0 L]);
+if T(m)>=T(1)
     ylim([T(1) T(m)]);
 end
 title('Profile of T');
 %-----Compute and Plot Fluxes @ East CV Faces
 
 for i=1:m-1
-    q(i)=ke(i)*(T(i+1)-T(i))/abs(X(i+1)-X(i));
+    q(i)=(Xvol(i)^r)*ke(i)*(T(i+1)-T(i))/abs(X(i+1)-X(i));
 end
 %------------------Plot Fluxes
 figure
@@ -286,13 +300,11 @@ plot(Xvol,q,'g','LineWidth',2);
 xlabel('X Coordinate of CV Faces');
 h2=ylabel('q_{e}=-q_{w}');
 set(h2, 'interpreter', 'tex');
-if max(q)~=min(q)
-    ylim([min(q) max(q)]);
-end
+ylim([min(q) max(q)]);
 title('Profile of Heat Flux');
 
 %---if k is a function of x Plot its Variation @ CV Faces
-if kStat==1 || kStat==2 || kStat==3
+if kStat==1 || kStat==3
     figure
     plot(Xvol,ke,'m','LineWidth',2);
     h1=xlabel('X Coordinate of CV Faces');
@@ -302,7 +314,7 @@ if kStat==1 || kStat==2 || kStat==3
 end
 
 
-fprintf('\nGood Lock, Mohammad Aghakhani,2010\n');
+fprintf('Good Lock, Mohammad Aghakhani,2010\n');
 
 
 

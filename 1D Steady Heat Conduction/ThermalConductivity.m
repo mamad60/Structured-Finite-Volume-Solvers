@@ -13,7 +13,7 @@ switch status
     case 2
         %If Thermal Condunctivity varies both with T enter expresssion here
         %k=f(T)
-        k=1e-3+1e+4*abs(T-273);
+        k=1e-3+1e-4*abs(T-283);
     case 3
         %If Thermal Condunctivity varies both with x & T enter expresssion here
         %k=f(x,T)
