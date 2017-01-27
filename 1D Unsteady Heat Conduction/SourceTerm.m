@@ -7,11 +7,11 @@ function [Sc,Sp] = SourceTerm(status,x,T)
 switch status
     case 0
         %No Source Term
-        Sc=0;1e-3;
+        Sc=0;
         Sp=0;
     case 1
         %Enter Fixed Source Term here
-        Sc=0;%1e-3;
+        Sc=1;%1e-3;
         Sp=0;
         
     case 2

@@ -54,10 +54,10 @@ hr=1; % Flux at The Left Boundary, Applies only if NL=2
 Tf=293.0; %Temperature @ infinity used if NL=2 Or NR=2 q=h(Tf-TB)
 
 %---------------------Post-Processing Parmeters
-animateT=0; %If set to 1 Frames for Temperatue Profile are animated every intAnimT Time Step
-animateQ=0; %If set to 1 Frames for Temperatue Profile are animated every intAnimQ Time Step
-intAnimT=0; %Temperature Results are animated every intanimT Time Steps
-intAnimQ=0; %Heat Flux Results are animated every intanimT Time Steps--May Be Slow Due to Calcualtions
+animateT=1; %If set to 1 Frames for Temperatue Profile are animated every intAnimT Time Step
+animateQ=1; %If set to 1 Frames for Temperatue Profile are animated every intAnimQ Time Step
+intAnimT=5; %Temperature Results are animated every intanimT Time Steps
+intAnimQ=5; %Heat Flux Results are animated every intanimT Time Steps--May Be Slow Due to Calcualtions
 AVIOutputT=0; %1: Animation of  T Profile is Saved in AVI Format
 AVIOutputQ=0; %1: Animation of  Q Profile is Saved in AVI Format
 intSaveT=0;  %1: Temperature Profile are Saved each intanimT Time Steps(if animateT=1), File Format Tprofile+TimeStep---Very Slow
@@ -101,7 +101,7 @@ for i=2:m-1;
     Dx(i)=abs(Xvol(i)-Xvol(i-1));
 end
 Dx(m)=X(m)-Xvol(m-1);
-
+Ti=sin(pi*X/L);
 %Show Time Step & Mesh Fourier Number
 DX=min(Dx)*2;
 alpha=max(ThermalConductivity(kStat,X,Ti))/(rho*Cp); %Fourier Number
@@ -117,7 +117,7 @@ if restart
     NumberIt=IT+NumberIt-1;
 else
     %Set Initial Values of T
-    T(:)=sin(pi*X/L);%Ti;
+    T(:)=Ti;
 end
 
 Texact=@(x,t) (sin(pi*x/L)*exp(-alpha*pi*pi*t/L^2)); %Validation
@@ -281,8 +281,8 @@ while (IT<=NumberIt) && (err>epsT)
         end
     end
     %----Plot  Q Profile
-    if animateQ || IT==1
-        if mod(IT,intAnimQ)==0
+    if animateQ 
+        if mod(IT,intAnimQ)==0 || IT==1
             %-----Compute  Fluxes @ East CV Faces
             for i=1:m-1
                 q(i)=ke(i)*(T(i+1)-T(i))/abs(X(i+1)-X(i));
@@ -330,8 +330,8 @@ title('Convergence History');
 %% Post-Processing-----------------------------------------------------------
 
 %---Report Fluxes @ Right & Left Boundries
-ql=kl*(T(1)-T(2))/(X(2)-X(1));   %Flux @ the Left Boundary
-qr=kr*(T(m)-T(m-1))/(X(m)-X(m-1));   %Flux @ the Left Boundary
+ql=kl*(T(2)-T(1))/abs(X(1)-X(2));   %Flux @ the Left Boundary
+qr=kr*(T(m)-T(m-1))/abs(X(m)-X(m-1));   %Flux @ the Left Boundary
 fprintf('\nThe Flux @ the Left Boundary is: %2.4e\n',ql);
 fprintf('The Flux @ the Right Boundary is: %2.4e\n',qr);
 %---Report Temeratures @ Right & Left Boundries
@@ -349,7 +349,7 @@ figure('Name','Temperature Profile at the Final Time Step','NumberTitle','off','
 xlabel('X Coordinate');
 ylabel('T');
 xlim([0 L]);
-title(strcat('Profile of Temperature  ','  (','Time Step=',num2str(IT-1),' ,Time= ',num2str(Dt*(IT-1)),')'));
+title(strcat('Profile of Temperature @ Final Time','  (','Time Step=',num2str(IT-1),' ,Time= ',num2str(Dt*(IT-1)),')'));
 %-----Compute and Plot Fluxes @ East CV Faces
 
 for i=1:m-1
@@ -364,16 +364,16 @@ set(h2, 'interpreter', 'tex');
 if max(q)~=min(q)
     ylim([min(q) max(q)]);
 end
-title(strcat('Profile of Heat Flux  ','  (','Time Step=',num2str(IT-1),' ,Time= ',num2str(Dt*(IT-1)),')'));
+title(strcat('Profile of Heat Flux @ Final Time ','  (','Time Step=',num2str(IT-1),' ,Time= ',num2str(Dt*(IT-1)),')'));
 
 %---if k is a function of x Plot its Variation @ CV Faces
-if kStat==1 || kStat==3
+if  kStat==1 || kStat==2 || kStat==3
     figure
     plot(Xvol,ke,'m','LineWidth',2);
     h1=xlabel('X Coordinate of CV Faces');
     ylabel('k_{e}');
     set(h1, 'interpreter', 'tex');
-    title('Thermal Counductiviy at CV Faces(East)')
+    title('Thermal Conductiviy at CV Faces(East) @ Final Time')
 end
 
 %--------------Play Movie

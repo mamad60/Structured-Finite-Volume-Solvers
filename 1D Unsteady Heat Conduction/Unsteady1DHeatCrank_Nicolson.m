@@ -33,9 +33,9 @@ NumberIt=1;  % Number of time steps
 epsT=1e-6;  %Convergence Criteria(If Steady Solution is Intended)
 %-----------
 
-kStat=0;  % Themal Conductivity Calculation Method
+kStat=3;  % Themal Conductivity Calculation Method
 % KStat=0:Constant 1:Function of X 2:Function of Temperature 3: Function of Both
-sStat=0;  %Source Term Calculation Method
+sStat=4;  %Source Term Calculation Method
 %sStat=0: No Source Term 1:Constant 2:Function of X 3:Function of Temperature 4: Function of Both
 iMethod=0; % Solution Method:
 %0 MATLAB Direct Solver 1: TDMA(Direct) 2:Conjugate Gradient
@@ -327,17 +327,17 @@ if(error(IT-resIt)>1000)
     return;
 end
 figure
-plot(resIt:NumberIt,log(error),'- g','LineWidth',1.5);
+semilogy(resIt:NumberIt,error,'- g','LineWidth',1.5);
 xlabel('Iteration');
-ylabel('Log(Steady Error)');
+ylabel('Steady Error');
 xlim([resIt IT])
 title('Convergence History');
 
 %% Post-Processing-----------------------------------------------------------
 
 %---Report Fluxes @ Right & Left Boundries
-ql=kl*(T(1)-T(2))/(X(2)-X(1));   %Flux @ the Left Boundary
-qr=kr*(T(m)-T(m-1))/(X(m)-X(m-1));   %Flux @ the Left Boundary
+ql=kl*(T(2)-T(1))/abs(X(1)-X(2));   %Flux @ the Left Boundary
+qr=kr*(T(m)-T(m-1))/abs(X(m)-X(m-1));   %Flux @ the Left Boundary
 fprintf('\nThe Flux @ the Left Boundary is: %2.4e\n',ql);
 fprintf('The Flux @ the Right Boundary is: %2.4e\n',qr);
 %---Report Temeratures @ Right & Left Boundries
@@ -373,13 +373,13 @@ end
 title(strcat('Profile of Heat Flux  ','  (','Time Step=',num2str(IT-1),' ,Time= ',num2str(Dt*(IT-1)),')'));
 
 %---if k is a function of x Plot its Variation @ CV Faces
-if kStat==1 || kStat==3
+if  kStat==1 || kStat==2 || kStat==3
     figure
     plot(Xvol,ke,'m','LineWidth',2);
     h1=xlabel('X Coordinate of CV Faces');
     ylabel('k_{e}');
     set(h1, 'interpreter', 'tex');
-    title('Thermal Counductiviy at CV Faces(East)')
+    title('Thermal Conductiviy at CV Faces(East)')
 end
 
 %--------------Play Movie

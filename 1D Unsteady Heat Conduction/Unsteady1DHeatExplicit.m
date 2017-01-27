@@ -11,19 +11,19 @@ clear
 close all
 
 %------Global Varibles
-global ke kw rho Cp Xe Xw Dx 
+global ke kw rho Cp Xe Xw Dx Sp Sc
 %--------------
 
 %Inputs
 L=1;  % Lenght of Domain
 m=100; % Number of Control Volumes
-Ti=273; %Initial Value of T at t=0
+Ti=0; %Initial Value of T at t=0
 rho=1; % Density
 Cp=1; %Thermal Capacity
-Dt=5.0e-2; % Time Step
+Dt=0.05; % Time Step
 NumberIt=20/Dt;  % Number of time steps
 epsT=1e-6;  %Convergence Criteria(If Steady Solution is Intended)
-tMethod=2;  %Time Iteration Method:0 Explicit Euler 1:2th Order Runge-Kutta 2:4th Order Runge-Kutta
+tMethod=14;  %Time Iteration Method:0 Explicit Euler 1:2th Order Runge-Kutta 2:4th Order Runge-Kutta
 %-----------
 kStat=0;  % Themal Conductivity Calculation Method
 % KStat=0:Constant 1:Function of X 2:Function of Temperature 3: Function of Both
@@ -101,6 +101,14 @@ else
     T(:)=sin(pi*X/L);%Ti
 end
 
+switch tMethod
+    case 0 %Explicit Euler
+        disp('Explicit Euler Method')
+    case 1  %Explicit 2nd Order Rung-Kutta
+        disp('2nd Order Rung-Kutta Method')
+    case 2 %Explicit 4th Order Rung-Kutta
+        disp('4th Order Rung-Kutta Method')
+end
 
 %Check Maximum Allowed Time Step & Fourier Number For Explicit Solver
 DX=min(Dx)*2;
@@ -208,22 +216,6 @@ while (IT<=NumberIt) && (err>epsT)
         [Sc,Sp] = SourceTerm(sStat,X(i),Told(i));
         
         %Compute Coefficients
-%         -------------Discritize According to time Stepping Scheme
-                %---------------ae & aw are independent of time stepping method
-%                 %ae
-%                 ae=ke(i)/Xe(i);
-%                 %aw
-%                 aw=kw/Xw(i);
-%                 ap0=(rho*Cp*Dx(i));
-%                 %Privious Time Source
-%                 cn=(ae-aw)*Told(i)+ae*Told(i+1)+aw*Told(i-1);
-%                 b(i)=Sc*Dx(i)+cn;
-%                 %Set Coefficients
-%                 ap=ap0-Sp*Dx(i);
-%                 T(i)=Told(i)+b(i)/ap*Dt;
-                %Solve by Euler Iteration
-                %-----apTp=aeTe0+awTw0+(ap0-ae-aw)Tp0
-                %T(i)=(ae*Told(i+1)+aw*Told(i-1)+(ap0-ae-aw)*Told(i)+b(i))/ap;
         %Euler Explicit Method
         switch tMethod
             case 0 %Explicit Euler
@@ -294,16 +286,16 @@ if(error(IT-resIt)>1000)
     return;
 end
 figure
-plot(resIt:NumberIt,log(error),'- g','LineWidth',1.5);
+semilogy(resIt:NumberIt,error,'- g','LineWidth',1.5);
 xlabel('Iteration');
-ylabel('Log(Steady Error)');
+ylabel('Steady Error');
 title('Convergence History');
 
 %% Post-Processing-----------------------------------------------------------
 
 %---Report Fluxes @ Right & Left Boundries
-ql=kl*(T(1)-T(2))/(X(2)-X(1));   %Flux @ the Left Boundary
-qr=kr*(T(m)-T(m-1))/(X(m)-X(m-1));   %Flux @ the Left Boundary
+ql=-kl*(T(1)-T(2))/abs(X(2)-X(1));   %Flux @ the Left Boundary
+qr=kr*(T(m)-T(m-1))/abs(X(m)-X(m-1));   %Flux @ the Left Boundary
 fprintf('\nThe Flux @ the Left Boundary is: %2.4e\n',ql);
 fprintf('The Flux @ the Right Boundary is: %2.4e\n',qr);
 %---Report Temeratures @ Right & Left Boundries
