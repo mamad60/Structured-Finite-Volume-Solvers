@@ -11,18 +11,18 @@ close all
 %Inputs
 L=1;  % Lenght of Domain
 m=100; % Number of Control Volumes
-kStat=3;  % Themal Conductivity Calculation Method
+kStat=0;  % Themal Conductivity Calculation Method
 % KStat=0:Constant 1:Function of X 2:Function of Temperature 3: Function of Both
-sStat=4;  %Source Term Calculation Method
+sStat=0;  %Source Term Calculation Method
 %0: No Source Term 1:Constant 2:Function of X 3:Function of Temperature 4: Function of Both
 sMethod=1; % Solution Method: 0 MATLAB Direct Solver 1: TDMA(Thomas)
 %-----Boundary Conditions
 NL=0; % 0:Fixed Temp. 1:Flux Bc 2:Convection on the Left Boundary
-NR=0; % 0:Fixed Temp. 1:Flux Bc 2:Convection on the Right Boundary
+NR=2; % 0:Fixed Temp. 1:Flux Bc 2:Convection on the Right Boundary
 Tl=273; % Temperature at The Left Boundary, Applies only if NL=0
 Tr=283; % Temperature at The Right Boundary, Applies only if NR=0
 Ql=0.1; % Flux at The Left Boundary, Applies only if NL=1
-Qr=1; % Flux at The Right Boundary, Applies only if NR=1
+Qr=0.1; % Flux at The Right Boundary, Applies only if NR=1
 %Flux Normal to boundary & Towards it Assumed Positive sign
 hl=1; % Convection Coefficient at The Left Boundary, Applies only if NL=2
 hr=0.1; % Flux at The Left Boundary, Applies only if NL=2
