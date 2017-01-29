@@ -255,29 +255,29 @@ while (IT<=NumberIt) && (err>epsT)
             end
             %Top & Bottom Boundaries
             for i=1:m;
-                q_t(i)=kn(i,n)*(T(i,n-1)-T(i,n))/abs(Y(i,n-1)-Y(i,n))*Dx(i,n);   %Flux @ the Bottom Boundary
+                q_t(i)=kn(i,n)*(T(i,n)-T(i,n-1))/abs(Y(i,n)-Y(i,n-1))*Dx(i,n);   %Flux @ the Bottom Boundary
                 q_b(i)=ks(i,1)*(T(i,1)-T(i,2))/abs(Y(i,1)-Y(i,2))*Dx(i,2);   %Flux @ the Top Boundary
             end
             %-----Compute and Plot Fluxes @ East & South CV Faces
             for j=1:n;
                 for i=1:m-1;
-                    qx(i,j)=ke(i,j)*(T(i,j)-T(i+1,j))/abs(X(i+1,j)-X(i,j))*Dy(i,j);
+                    qx(i,j)=ke(i,j)*(T(i,j)-T(i+1,j))/abs(X(i+1,j)-X(i,j));
                 end
-                qx(m,j)=-q_r(j);
+                qx(m,j)=-q_r(j)/Dy(m,j);
             end
             for i=1:m;
                 for j=1:n-1;
-                    qy(i,j)=ks(i,j)*(T(i,j)-T(i,j+1))/abs(Y(i,j+1)-Y(i,j))*Dx(i,j);
+                    qy(i,j)=ks(i,j)*(T(i,j)-T(i,j+1))/abs(Y(i,j+1)-Y(i,j));
                 end
-                qy(i,n)=-q_b(i);
+                qy(i,n)=-q_b(i)/Dx(i,2);
             end
-            figure(hQ);
             %Plot Flux vectors
+            figure(hQ);
             contour(X,Y,T)
             hold on
             quiver(X,Y,qx,qy)
             hold off
-            title(strcat('Profile of Heat Flux  ','  (','Time Step=',num2str(IT-1),' ,Time= ',num2str(Dt*(IT)),')'));
+            title(strcat('Profile of Heat Flux  ','  (','Time Step=',num2str(IT),' ,Time= ',num2str(Dt*(IT)),')'));
             drawnow
             pause(1);
             movQ(mCountQ)=getframe(gcf);
@@ -348,21 +348,21 @@ for j=1:n;
 end
 %Top & Bottom Boundaries
 for i=1:m;
-    q_t(i)=kn(i,n)*(T(i,n-1)-T(i,n))/abs(Y(i,n-1)-Y(i,n))*Dx(i,n);   %Flux @ the Bottom Boundary
+    q_t(i)=kn(i,n)*(T(i,n)-T(i,n-1))/abs(Y(i,n)-Y(i,n-1))*Dx(i,n);   %Flux @ the Bottom Boundary
     q_b(i)=ks(i,1)*(T(i,1)-T(i,2))/abs(Y(i,1)-Y(i,2))*Dx(i,2);   %Flux @ the Top Boundary
 end
 %-----Compute and Plot Fluxes @ East & South CV Faces
 for j=1:n;
     for i=1:m-1;
-        qx(i,j)=ke(i,j)*(T(i,j)-T(i+1,j))/abs(X(i+1,j)-X(i,j))*Dy(i,j);
+        qx(i,j)=ke(i,j)*(T(i,j)-T(i+1,j))/abs(X(i+1,j)-X(i,j));
     end
-    qx(m,j)=-q_r(j);
+    qx(m,j)=-q_r(j)/Dy(m,j);
 end
 for i=1:m;
     for j=1:n-1;
-        qy(i,j)=ks(i,j)*(T(i,j)-T(i,j+1))/abs(Y(i,j+1)-Y(i,j))*Dx(i,j);
+        qy(i,j)=ks(i,j)*(T(i,j)-T(i,j+1))/abs(Y(i,j+1)-Y(i,j));
     end
-    qy(i,n)=-q_b(i);    
+    qy(i,n)=-q_b(i)/Dx(i,2);
 end
 
 %Plot Flux vectors
@@ -378,8 +378,8 @@ title(strcat('Flux Vectors @ Final time ','  (','Time Step=',num2str(IT-1),' ,Ti
 
 
 %Report Flux in inbalence @ Boundaries
-fprintf('\nFlux inblalence @ Right & Left Boundaries at Final time is %2.2e\n',sum(q_r)+sum(q_l));
-fprintf('Flux inblalence @ Top & Bottom Boundaries at Final time is %2.2e\n\n',sum(q_t)+sum(q_b));
+fprintf('\nFlux inblalance @ Right & Left Boundaries at Final time is %2.2e\n',sum(q_r)+sum(q_l));
+fprintf('Flux inblalance @ Top & Bottom Boundaries at Final time is %2.2e\n\n',sum(q_t)+sum(q_b));
 
 
 %---if k is a function of x Plot its Variation @ CV Faces
