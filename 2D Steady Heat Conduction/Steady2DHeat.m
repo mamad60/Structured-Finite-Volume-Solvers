@@ -32,11 +32,11 @@ Lx=2;  % Lenght of Domain in X direction(i)
 Ly=1;  % Lenght of Domain in X direction(i)
 m=10; % Number of Control Volumes in X direction(i)
 n=10; % Number of Control Volumes in Y direction(j)
-kStat=3;  % Themal Conductivity Calculation Method
+kStat=0;  % Themal Conductivity Calculation Method
 % KStat=0:Constant 1:Function of X(and/Or)Y 2:Function of Temperature 3: Function of Both Space & Temp.
-sStat=4;  %Source Term Calculation Method
+sStat=0;  %Source Term Calculation Method
 %0: No Source Term 1:Constant 2:Function of X(and/Or)Y 3:Function of Temperature 4: Function of Both
-iMethod=13; % Solution Method:
+iMethod=0; % Solution Method:
 %0 MATLAB Direct Solver 
 %2:Jacobi(Matrix) 3:Jacobi 4:Gauss-Seidel(Matrix) 5:Gauss-Seidel
 %6: Symmetric Gauss-Seidel Matrix 7:Symmetric Gauss-Seidel
@@ -65,7 +65,7 @@ T=zeros(m,n); %Variable for Storing Solution
 Told=zeros(m,n); %Variable for Storing Old Iteration Solution
 T1=zeros(m*n,1); % T in Relabled form
 %A=spalloc(m*n,n*m,5*(m-1)*(n-1)+4*(m+n)); % Coefficient Matrix---Sparse Matrix Allocation
-A=sparse(n*m); % Coefficient Matrix
+A=zeros(n*m); % Coefficient Matrix
 b=zeros(n*m,1); % Right hand side Matrix
 Dx=zeros(m,n); % Control Volume lenght for Source Terms Evaluation
 Dy=zeros(m,n); % Control Volume lenght for Source Terms Evaluation
@@ -216,21 +216,21 @@ for j=1:n;
 end
 %Top & Bottom Boundaries
 for i=1:m;
-    q_t(i)=kn(i,n)*(T(i,n-1)-T(i,n))/abs(Y(i,n-1)-Y(i,n))*Dx(i,n);   %Flux @ the Bottom Boundary
+    q_t(i)=kn(i,n)*(T(i,n)-T(i,n-1))/abs(Y(i,n)-Y(i,n-1))*Dx(i,n);   %Flux @ the Bottom Boundary
     q_b(i)=ks(i,1)*(T(i,1)-T(i,2))/abs(Y(i,1)-Y(i,2))*Dx(i,2);   %Flux @ the Top Boundary
 end
 %-----Compute and Plot Fluxes @ East & South CV Faces
 for j=1:n;
     for i=1:m-1;
-        qx(i,j)=ke(i,j)*(T(i,j)-T(i+1,j))/abs(X(i+1,j)-X(i,j))*Dy(i,j);
+        qx(i,j)=ke(i,j)*(T(i,j)-T(i+1,j))/abs(X(i+1,j)-X(i,j));
     end
-    qx(m,j)=-q_r(j);
+    qx(m,j)=-q_r(j)/Dy(m,j);
 end
 for i=1:m;
     for j=1:n-1;
-        qy(i,j)=ks(i,j)*(T(i,j)-T(i,j+1))/abs(Y(i,j+1)-Y(i,j))*Dx(i,j);
+        qy(i,j)=ks(i,j)*(T(i,j)-T(i,j+1))/abs(Y(i,j+1)-Y(i,j));
     end
-    qy(i,n)=-q_b(i);    
+    qy(i,n)=-q_b(i)/Dx(i,2);    
 end
 
 %Plot Flux vectors
@@ -241,8 +241,8 @@ quiver(X,Y,qx,qy)
 hold off
 
 %Report Flux in inbalence @ Boundaries
-fprintf('\nFlux inblalence @ Right & Left Boundaries is %2.2e\n',sum(q_r)+sum(q_l));
-fprintf('Flux inblalence @ Top & Bottom Boundaries is %2.2e\n',sum(q_t)+sum(q_b));
+fprintf('\nFlux Imbalance @ Right & Left Boundaries is %2.2e\n',sum(q_r)+sum(q_l));
+fprintf('Flux Imbalance @ Top & Bottom Boundaries is %2.2e\n',sum(q_t)+sum(q_b));
 
 
 %---if k is a function of x Plot its Variation @ CV Faces
