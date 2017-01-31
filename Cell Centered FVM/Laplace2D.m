@@ -4,8 +4,8 @@ clc
 close all
 
 %-----------------Inputs
-N=50; % No. CVs in X direcition
-M=50; % No. CVs in X direcition
+N=10; % No. CVs in X direcition
+M=10; % No. CVs in Y direcition
 XMIN=0; %Minimum X
 XMAX=1; %Maximum X
 EXX=1; %Expansion Factor ------X Direction
@@ -16,10 +16,10 @@ EXY=1; %Expansion Factor ------X Direction
 %====Boundry Conditions Input Setting
 NL=0; % 0:Fixed Temp. 1:Flux Bc
 NR=0; % 0:Fixed Temp. 1:Flux Bc
-NB=0; % 0:Fixed Temp. 1:Flux Bc
-NT=0; % 0:Fixed Temp. 1:Flux Bc
-FIl=0;   % FI at The Left Boundary, Applies only if NL=0
-FIr=1;   % FI at The Right Boundary, Applies only if NR=0
+NB=1; % 0:Fixed Temp. 1:Flux Bc
+NT=1; % 0:Fixed Temp. 1:Flux Bc
+FIl=100;   % FI at The Left Boundary, Applies only if NL=0
+FIr=0;   % FI at The Right Boundary, Applies only if NR=0
 FIb=0; % FI at The Bottom Boundary, Applies only if NB=0
 FIt=1; % Temperature at The Top Boundary, Applies only if NT=0
 Ql=0; % Flux at The Left Boundary, Applies only if NL=1
@@ -46,7 +46,7 @@ AW=zeros(NM,1);  %West Coe.
 AN=zeros(NM,1);  %East Coe.
 AS=zeros(NM,1);  %West Coe.
 AP=zeros(NM,1);  %Point Coe.
-B=zeros(NM,3); %Auxillary Matrix for Constructing Sparse Marix
+B=zeros(NM,5); %Auxillary Matrix for Constructing Sparse Marix
 %==========================================================
 %----------Grid Generation
 %DEFINE GRID IN X-DIRECTION
@@ -190,11 +190,14 @@ AW=AW(2:end);
 AN=AN(1:end-N);
 AS=AS(N+1:end);
 %Sparse Matrix Construction
-% B(1:N-1,1)=-AE;
-% B(:,2)=AP;
-% B(2:N,3)=-AW;
-% A=spdiags(B,[-1 0 1],N,N);
-A=diag(AP)-diag(AE,1)-diag(AW,-1)-diag(AN,N)-diag(AS,-N);
+B(1:NM-1,2)=-AW;
+B(:,3)=AP;
+B(2:NM,4)=-AE;
+B(1:NM-N,1)=-AN;
+B(N+1:NM,5)=-AS;
+
+A=spdiags(B,[-N -1 0 1 N],NM,NM);
+% A=diag(AP)-diag(AE,1)-diag(AW,-1)-diag(AN,N)-diag(AS,-N);
 %================================================================
 %Solve Algebraic system with any Direct or Iterative Solver
 T=A\Q; %Solution in the Interior Cells
@@ -255,14 +258,40 @@ title('Surface of \phi')
 % title('Sourface of Error')
 % fprintf('\nThe Norm of Error is %2.2e\n',norm(error))
 %================================================================
-%Report Fluxes
-% j=2:NJM;
-% ql=(FI(2,j)-FI(3,j))/(XC(2)-XC(3));
-% qr=-(FI(N,j)-FI(N-1,j))/(XC(N)-XC(N-1));
-% i=2:NIM;
-% qt=(FI(i,2)-FI(i,3))/(YC(2)-YC(3));
-% qb=-(FI(i,M)-FI(i,M-1))/(YC(M)-YC(M-1));
-% fprintf('\nFlux of Inbalance of FI @ Boundaries is:\t%2.4f\n',sum(qr)+sum(ql)+sum(qt)+sum(qb));
-disp('Good Lock, Mohammad Aghakhani')
+%---Compute Fluxes @ Boundary Points
+%Left & Right Boundaries
+for j=1:M;
+    q_l(j)=(FI(1,j)-FI(2,j))/abs(X(1)-X(2));   %Flux @ the Left Boundary
+    q_r(j)=(FI(N,j)-FI(N-1,j))/abs(X(N-1)-X(N));   %Flux @ the Left Boundary
+end
+%Top & Bottom Boundaries
+for i=1:N;
+    q_t(i)=(FI(i,M)-FI(i,M-1))/abs(Y(M)-Y(M-1));   %Flux @ the Bottom Boundary
+    q_b(i)=(FI(i,1)-FI(i,2))/abs(Y(1)-Y(2));   %Flux @ the Top Boundary
+end
+%-----Compute and Plot Fluxes @ East & South CV Faces
+for j=1:M;
+    for i=1:N;
+        qx(i,j)=(FI(i,j)-FI(i+1,j))/abs(X(i+1)-X(i));
+    end
+    qx(N,j)=-q_r(j);
+end
+for i=1:N;
+    for j=1:M;
+        qy(i,j)=(FI(i,j)-FI(i,j+1))/abs(Y(j+1)-Y(j));
+    end
+    qy(i,M)=-q_b(i);   
+end
+%Report Flux in inbalence @ Boundaries
+fprintf('\nFlux Imbalance @ Right & Left Boundaries is %2.2e\n',sum(q_r)+sum(q_l));
+fprintf('Flux Imbalance @ Top & Bottom Boundaries is %2.2e\n',sum(q_t)+sum(q_b));
 
+%Plot Flux vectors
+figure('Name','Flux Vectors');
+contour(xc',yc',FI)
+hold on
+quiver(xc(2:NJM,2:NJM)',yc(2:NIM,2:NJM)',qx,qy)
+hold off
+% 
+disp('Good Lock, Mohammad Aghakhani')
 

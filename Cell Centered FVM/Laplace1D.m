@@ -4,10 +4,10 @@ clc
 close all
 
 %-----------------Inputs
-N=30; % No. CVs in X direcition
+N=5; % No. CVs in X direcition
 XMIN=0; %Minimum X
 XMAX=1; %Maximum X
-EXX=1; %Expansion Factor ------X Direction
+EXX=1.1; %Expansion Factor ------X Direction
 %-----------------------------------------------
 NI=N+2;  % Two Extra points for first & last Cvs(Boundary)
 NIM=NI-1; % No CVS +1, the NIM CV is on the boundary
@@ -75,19 +75,19 @@ AP=AP(2:end);
 AE=AE(2:end-1);
 AW=AW(3:end);
 %Sparse Matrix Construction
-B(1:N-1,1)=-AE;
+B(1:N-1,1)=-AW;
 B(:,2)=AP;
-B(2:N,3)=-AW;
+B(2:N,3)=-AE;
 A=spdiags(B,[-1 0 1],N,N);
-% A=diag(AP)-diag(AE,1)-diag(AW,-1);
+%  A=diag(AP)-diag(AE,1)-diag(AW,-1);
 b=Q(2:NIM)';
 T=A\b; %Solution in the Interior Cells
 FI(2:NIM)=T(:);
 %Interpolate FI @ Boundaries
-%Left Boundary
-p=polyfit([XC(2) XC(3) XC(4)],[FI(2) FI(3) FI(4)],2);
-l=polyval(p,XC(1));
-FI(1)=l;
+%Left Boundary Interpolation, IF q is applied
+% p=polyfit([XC(2) XC(3) XC(4)],[FI(2) FI(3) FI(4)],2);
+% l=polyval(p,XC(1));
+% FI(1)=l;
 % %Right Boundary
 % p=polyfit([XC(NIM) XC(NIM-1) XC(NIM-2)],[FI(NIM) FI(NIM-1) FI(NIM-2)]2)
 % r=polyval(p,XC(NI))
