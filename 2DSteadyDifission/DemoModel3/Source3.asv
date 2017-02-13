@@ -1,0 +1,49 @@
+function [Su Sp]=Source3(sStat)
+%Return Source Term S=Sp*FIp*Su
+global XC  YC Su0 Sp0 DX DY NM N M NIM NJM
+global Xmin Xmax  Ymin Ymax
+
+U=zeros(N,M);  % Source Term---Su
+P=zeros(N,M);  % Source Term---Sp
+Su=zeros(NM,1);  % Source Term---Su
+Sp=zeros(NM,1);  % Source Term---Sp
+Lx=abs(Xmax-Xmin);
+Ly=abs(Ymax-Ymin);
+switch sStat
+    case 1 %zero Source Term
+        %Do nothing
+        return
+    case 2 %Constant Sourc Term;
+        for  i=1:N;
+            for j=2:M
+                U(i,j)=Su0*DX(i+1).*DY(j+1);
+                P(i,j)=Sp0*DX(i+1)*DY(j+1);
+            end
+        end
+    case 3  % Su or Sp is function of X/Y
+        for  i=1:N;
+            for j=1:M
+                if (XC(i)>=0.25*Lx && XC(i)<=0.75*Lx) && (YC(j)>=0.25*Ly && YC(j)<=0.75*Ly)
+                    U(i,j)=Su0*DX(i+1)*DY(j+1);
+                end
+                P(i,j)=0;
+            end
+        end
+end
+%Fill into 1D Array
+for i=1:N
+    for j=1:M
+        IJ=(j-1)*N+i; %Convert 2D to 1D index
+        Sp(IJ)=P(i,j);
+        Su(IJ)=U(i,j);
+    end
+end
+if sStat==3
+    figure
+    [x1 , y1]=ndgrid(XC(2:NIM),YC(2:NJM));
+    contourf(x1,y1,U)
+    title('Source Term')
+end
+end
+
+
