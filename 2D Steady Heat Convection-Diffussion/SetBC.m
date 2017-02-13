@@ -6,14 +6,14 @@ global X Y  XC YC N M NI NJ NIM NJM NIJ NM FI
 global NL NR NB NT BCl BCr BCb BCt
 
 %====Boundry Conditions Input Setting
-NL=0; % 0:Fixed FI 1:Flux Bc
+NL=1; % 0:Fixed FI 1:Flux Bc
 NR=1; % 0:Fixed FI 1:Flux Bc
 NB=0; % 0:Fixed FI 1:Flux Bc
-NT=1; % 0:Fixed FI 1:Flux Bc
+NT=0; % 0:Fixed FI 1:Flux Bc
 FIl=100;   % FI at The Left Boundary, Applies only if NL=0
 FIr=0;   % FI at The Right Boundary, Applies only if NR=0
 FIb=0; % FI at The Bottom Boundary, Applies only if NB=0
-FIt=1; % FI at The Top Boundary, Applies only if NT=0
+FIt=100; % FI at The Top Boundary, Applies only if NT=0
 Ql=0; % Flux at The Left Boundary, Applies only if NL=1
 Qr=0; % Flux at The Right Boundary, Applies only if NR=1
 Qb=0; % Flux at The Bottom Boundary, Applies only if NB=1

@@ -20,18 +20,22 @@ function [x_out] = Solve(A,x,b,MaxITSolver,espSolver,iMethod)
         case 7
             x_out=SymmetricGaussSeidel(A,x,b,MaxITSolver,espSolver);
         case 8
-            omega=FindOptimalOmega(A); % Find the Optimal Relaxation Coe.
+            % Get the Over-Relaxation Coe. From User.
+            omega=input('Please Enter Over-Relaxation(Omega) for the SOR Solver: ');
             x_out=SORMatrix(A,x,b,omega,MaxITSolver,espSolver);
         case 9
-            omega=FindOptimalOmega(A); % Find the Optimal Relaxation Coe.
+            % Get the Over-Relaxation Coe. From User.
+            omega=input('Please Enter Over-Relaxation(Omega) for the SOR Solver: ');
             x_out=SOR(A,x,b,omega,MaxITSolver,espSolver);
         case 10
-            omega=FindOptimalOmega(A)*0.95; % Find the Optimal Relaxation Coe.
+            % Get the Over-Relaxation Coe. From User.
+            omega=input('Please Enter Over-Relaxation(Omega) for the SOR Solver: ');
             x_out=SymmetricSORMatrix(A,x,b,omega,MaxITSolver,espSolver);
         case 11
             x_out=GaussSeidelRedBlack(A,x,b,MaxITSolver,espSolver);
         case 12
-            omega=FindOptimalOmega(A); % Find the Optimal Relaxation Coe.
+            % Get the Over-Relaxation Coe. From User.
+            omega=input('Please Enter Over-Relaxation(Omega) for the SOR Solver: ');
             x_out=SOR4Tri(A,x,b,omega,MaxITSolver,espSolver);
         case 13
             x_out=CG(A,x,b,MaxITSolver,espSolver);

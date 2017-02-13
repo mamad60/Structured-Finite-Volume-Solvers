@@ -6,7 +6,7 @@ global IC
 switch IC  % Discritize According to the choosen Scheme
     case 0 %CDS
         A=1-0.5*abs(P);     
-    case 1 %First Order Upwin(Donor Cell) Scheme
+    case 1 %First Order Upwind(Donor Cell) Scheme
         A=1;
     case 2 %Hybrid Scheme
         A=max(1-0.5*abs(P),0);   

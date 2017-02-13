@@ -27,17 +27,17 @@ global rho u v Xe Xw Yn Ys Gamma DX DY
 global AW AE AN AS AP Q IC 
 
 %=====Inputs
-N=10; % No. CVs in X direcition
-M=10; % No. CVs in Y direcition
+N=20; % No. CVs in X direcition
+M=20; % No. CVs in Y direcition
 Xmin=0; %Minimum X
-Xmax=2; %Maximum X
+Xmax=1; %Maximum X
 Ymin=0; %Minimum Y
 Ymax=1; %Maximum Y
 EXX=1; %Expansion Factor ---X Direction
 EXY=1; %Expansion Factor ---X Direction
 rho=1; %Density
-Gamma=0; %Diffussion Coefficient
-IC=1; %Convective Flux Discritization Scheme:
+Gamma=1; %Diffussion Coefficient
+IC=3; %Convective Flux Discritization Scheme:
 %0:Centeral Difference 1:First Order Upwind  
 %2:Hybrid              3:Power Law
 %-----------------------------------------------------
@@ -47,9 +47,9 @@ iMethod=0; % Solution Method:
 %6: Symmetric Gauss-Seidel Matrix 7:Symmetric Gauss-Seidel
 %8:SOR(Matrix) 9:SOR 10:Symmetric SOR Matrix
 %11:Red-Black Gauss-Seidel  
-%(13:Conjugate Gradient   14: Preconditioned Conjugate Gradient)---> Use
-%this solve with causion for ,for Convection-Diffission Matrix is not
-%Symmetric,Specially for high Peclet Number
+%(13:Conjugate Gradient   14: Preconditioned Conjugate Gradient)---> 
+%(Use this solve with causion for ,for Convection-Diffission Matrix is not
+%Symmetric,Specially for high Peclet Number)
 %15: BiConjugate gradient
 espSolver=1e-6; % Maximum Residual of Matrix Iterative Solver
 MaxITSolver=100000; % Maximum Iteraton of Matrix Iterative Solver
@@ -69,7 +69,7 @@ X=zeros(1,NI);  %Grid Nodes
 XC=zeros(1,NI); %Cell Centers
 Y=zeros(1,NJ);  %Grid Nodes
 YC=zeros(1,NJ); %Cell Centers
-FI=zeros(NI,NJ); %Solution Variavle
+FI=zeros(NI,NJ); %Solution Variable
 Q=zeros(NM,1);  % Source Term
 AE=zeros(NM,1);  %East Coe.
 AW=zeros(NM,1);  %West Coe.
@@ -82,22 +82,36 @@ Xe=zeros(1,NI);
 Ys=zeros(1,NJ);
 Yn=zeros(1,NJ);
 u=zeros(NIM,NJM); %Known Velociy Field @ the x direction
-v=zeros(NIM,NIM); %Known Velociy Field @ the y direction
+v=zeros(NIM,NJM); %Known Velociy Field @ the y direction
 T=zeros(NM,1); %Solution in the interior cells
 B=zeros(NM,5); %Auxillary Matrix for Constructing Sparse Marix
 %==========================================================================
 %Grid Generation
 [X,XC,Xw,Xe,DX,Y,YC,Ys,Yn,DY] = Grid2d(Xmin,Xmax,Ymin,Ymax,N,M,EXX,EXY);
 % V=sqrt(u^2+v^2);
-% P=rho*V*(Xmax-Xmin)*(Ymax-Ymin)/Gamma; %Peclet Number
-% fprintf('\nThe Peclet Number is %2.2f\n',P)
-%Calaculate the know velocity filed u & v
+%Calaculate the know velocity filed u & v-Enter velocity in the Velocity file
 Velocity
+%Calculate Peclet Number
+Px=rho*max(max((abs(u))))*(Xmax-Xmin)/Gamma; %Peclet Number x Direction
+Py=rho*max(max(abs(v)))*(Ymax-Ymin)/Gamma; %Peclet Number y Direction
+fprintf('\nThe Peclet Number in x direction is %2.2f',Px)
+fprintf('\nThe Peclet Number in x direction is %2.2f\n',Py)
+%Scheme to Text
+switch IC  
+    case 0 %CDS
+        Sch='Centeral Difference';     
+    case 1 %First Order Upwind(Donor Cell) Scheme
+        Sch='1st Order Upwind';     
+    case 2 %Hybrid Scheme
+        Sch='Hybrid';     
+    case 3 %Pwer Law Scheme
+        Sch='Power Law';     
+end
+fprintf('\nAdvective Term Discritsation Scheme is  %s\n',Sch)
 %==============Set BC and Fill into Fi
 %-----------Modify SetBC file for adjasting boundary conditions
 SetBC;
 T(:)=0;   %Field Initialazation
-
 
 %% ========================================================================
 tic;
@@ -131,7 +145,6 @@ A=spdiags(B,[-N -1 0 1 N],NM,NM);
 %Solve Algebraic system with any Direct or Iterative Solver
 [T] = Solve(A,T,Q,MaxITSolver,espSolver,iMethod); %Solution in the Interior Cells
 toc
-T=reshape(T,N,M); %Convert to 2D Array
 
 %% ==========================================================================
 T=reshape(T,N,M); %Convert to 2D Array
@@ -147,14 +160,15 @@ for j=2:NJM;
 end
 %Top & Bottom Boundary interpolation(IF Flux BCs specified)
 for i=2:NIM;
-    %Top Boundary
-    if NT==1, FI(i,1)=BCt(i)*(YC(1)-YC(2))+FI(i,2);end
     %Bottom Boundary
-    if NB==1, FI(i,NJ)=BCb(i)*(YC(NJ)-XC(NJM))+FI(i,NJM);end
+    if NB==1, FI(i,1)=BCb(i)*(YC(1)-YC(2))+FI(i,2);end
+    %Top Boundary
+    if NT==1, FI(i,NJ)=BCt(i)*(YC(NJ)-XC(NJM))+FI(i,NJM);end
 end
 
 %--------Top & Bottom Boundary
-% %Plot Result
+%Plot Result
+
 [xc yc]=ndgrid(XC,YC);  %2D mesh grid for contour
 figure
 contourf(xc,yc,FI);
@@ -162,11 +176,28 @@ xlabel('X')
 ylabel('Y')
 title('Contour of \phi')
 colorbar
+
 figure
 surf(xc,yc,FI);
 xlabel('X')
 ylabel('Y')
 title('Surface of \phi')
+text(-0.1,1.04,strcat('Peclet_x=',num2str(Px) ,'  ,Peclet_y=',num2str(Py)),'Units','Normalized','Edge','blue')    
+text(-0.1,0.97,strcat('Scheme=',Sch),'Units','Normalized','Edge','green')    
+%Plot profile of FI @  mid-section of the domain
+figure
+plot(XC,FI(:,1+floor(M/2)));  %Y Direction
+xlabel('X')
+ylabel('\phi')
+xlim([Xmin Xmax])
+title('Profile of \phi  @  0.5(Y_{max}-Y_{min})')
+figure
+plot(YC,FI(1+floor(N/2),:));  %X Direction
+xlabel('Y')
+ylabel('\phi')
+title('Profile of \phi  @  0.5(X_{max}-X_{min})')
+xlim([Ymin Ymax])
+
 
 % %---Compute Fluxes @ Boundary Points
 % %Left & Right Boundaries
