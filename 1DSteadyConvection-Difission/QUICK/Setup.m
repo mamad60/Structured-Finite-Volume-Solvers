@@ -14,17 +14,13 @@ EXX=1; %Expansion Factor ---X Direction
 %Material Properties and Velocities
 rho=1; %Density
 u=1*ones(1,NI); %Known Velociy Field
-%Convective Term Discritisation Method
-IC=3; %Convective Flux Discritization Scheme:
-%0:Centeral Difference 1:First Order Upwind  
-%2:Exponential  3:Hybrid 4:Power Law
 %=========================================================================
 %Enter Cross Section Data Here
 S0=1;  %Base Cross-Section
 Sfunc=@(S0,x) (1); %Funtion for Calculation Cross-Sections
 %==========================================================================
 %Enter Material Properties Here
-Gamma0=.1; %Diffussion Coefficient
+Gamma0=0.5; %Diffussion Coefficient
 gStat=1; %1: Gamma is constant 2:Gamama varies with x
 
 %==========================================================================
